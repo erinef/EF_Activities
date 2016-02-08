@@ -34,6 +34,61 @@ plot(time,n,ylim=c(0,12),lwd=3,type='l',
 
 1. Generate plots of the logistic growth model at r = 1.95, 2.05, 2.5, and 2.8 Describe the trajectory observed in each case.
 
+```{r}
+r = 1.95         ## intrinsic growth rate
+
+n = rep(n0,NT)    ## vector to store results
+for(t in 2:NT){
+  n[t] = n[t-1] + r*n[t-1]*(1-n[t-1]/K)
+}
+
+plot(time,n,ylim=c(0,12),lwd=3,type='l',
+     ,bty='l',cex.lab=1.5,
+      xlab="Time",ylab="Population Size")
+
+### ^ damping oscillation
+
+r = 2.05         ## intrinsic growth rate
+
+n = rep(n0,NT)    ## vector to store results
+for(t in 2:NT){
+  n[t] = n[t-1] + r*n[t-1]*(1-n[t-1]/K)
+}
+
+plot(time,n,ylim=c(0,12),lwd=3,type='l',
+     ,bty='l',cex.lab=1.5,
+      xlab="Time",ylab="Population Size")
+
+### ^ 2 point oscillation
+
+r = 2.5         ## intrinsic growth rate
+
+n = rep(n0,NT)    ## vector to store results
+for(t in 2:NT){
+  n[t] = n[t-1] + r*n[t-1]*(1-n[t-1]/K)
+}
+
+plot(time,n,ylim=c(0,12),lwd=3,type='l',
+     ,bty='l',cex.lab=1.5,
+      xlab="Time",ylab="Population Size")
+
+### ^ 4 point oscillation
+
+r = 2.8         ## intrinsic growth rate
+
+n = rep(n0,NT)    ## vector to store results
+for(t in 2:NT){
+  n[t] = n[t-1] + r*n[t-1]*(1-n[t-1]/K)
+}
+
+plot(time,n,ylim=c(0,12),lwd=3,type='l',
+     ,bty='l',cex.lab=1.5,
+      xlab="Time",ylab="Population Size")
+
+### ^ chaotic regime
+```
+
+
 
 Probability distributions in R
 ------------------------------
@@ -139,12 +194,30 @@ This example demonstrates that as the number of random draws from a probability 
 
 2. Choose another probability distribution and generate graphs of the probability density function, the cumulative distribution function, the quantile function, and a histogram of samples from that distribution.
 
+```{r}
+x = seq(0,10,by=1)
+plot(x, dpois(x,1), type='l')
+
+
+plot(x, ppois(x,1), type='l')
+
+p = seq(0,1,by=0.1)
+plot(p,qpois(p,1), type='l', ylim= range(x))
+
+n = c(10,100,1000,10000)    # sequence of sample sizes
+for(i in 1:4){          # loop over these sample sizes
+  hist(rpois(n[i],1),main=n[i],probability=TRUE,breaks=40)  
+                #here breaks defines number of bins in the histogram
+  lines(x,dpois(x,1),col=2)
+}
+```
+
 Monte Carlo Simulation
 ----------------------
 
 Most of the figures from the logistic growth example in Chapter 2 included plots of the median trajectory and 95% interval estimates. These summary statistics are a reflection of the fact that the underlying model prediction was a timeseries of probability distributions, rather than a single trajectory. So how do we project a probability distribution through time?
 
-In Chapter 11 we will explore a variety of analytical and numerical approachs to propagating uncertainty, and the trade-offs among them, in much greater detail. Today I wanted to introduce a particularly common and general numerical approach, **Monte Carlo** simulation. A Monte Carlo method is any algorithm that relys on randomization to approximate a computation. These approaches and other will be discussed in more detail later (e.g. Chapters 5, 11, 13, & 14).
+In Chapter 11 we will explore a variety of analytical and numerical approachs to propagating uncertainty, and the trade-offs among them, in much greater detail. Today I wanted to introduce a particularly common and general numerical approach, **Monte Carlo** simulation. A Monte Carlo method is any algorithm that relies on randomization to approximate a computation. These approaches and other will be discussed in more detail later (e.g. Chapters 5, 11, 13, & 14).
 
 The previous example of approximating the Normal distribution with a histogram of samples from the Normal distribution is a simple illustration of this approach. What makes this approach powerful is that we can transform the samples from a distribution through whatever function we would like and the resulting set of samples is the correct histogram for that transformation. This is important because, by contrast, we **cannot** transform the summary statistics, such as the mean of the probability distribution, through an arbitrary function because of **Jensen's Inequality**.
 
@@ -170,6 +243,19 @@ It turns out that this specific transformation (x^2 of a standard Normal), has a
 ### Problems
 
 3. Numerically transform a lognormal(meanlog=0,sdlog=0.5) through sin(x) using Monte Carlo simulation. Include histograms of the original and transformed distributions. Report the mean, median, and 95% CI for both distributions and indicate these values on the histograms.
+
+```{r}
+z = dlnorm(x,meanlog=0,sdlog=0.5)
+y = sin(x)
+
+hist(z, main="Original Distribution", breaks=40)
+abline(v=quantile(x,c(0.025,0.5,0.975)),lty=c(2,1,2),lwd=3,col="orange")
+abline(v=mean(z),col="red",lwd=3,lty=3)
+
+hist(y,main="Transformed distribution", breaks=40)
+abline(v=quantile(y,c(0.025,0.5,0.975)),lty=c(2,1,2),lwd=3,col="orange")
+abline(v=mean(y),col="red",lwd=3,lty=3)
+```
 
 Parameter error
 ---------------
@@ -202,11 +288,11 @@ Next we'll use *apply* to calculate the median and CI for each time point.
 n.stats = apply(n,2,quantile,c(0.025,0.5,0.975))
 ```
 
-Unfortunately, R doesn't have a built in function for plotting shaded CI on time-series plots, so we'll define one. Unlike plot, which just takes x and y as arguements, this function need to take time-series for both the upper (yhi) and lower (ylo) intervals.
+Unfortunately, R doesn't have a built in function for plotting shaded CI on time-series plots, so we'll define one. Unlike plot, which just takes x and y as arguements, this function needs to take time-series for both the upper (yhi) and lower (ylo) intervals.
 ```{r}
 ciEnvelope <- function(x,ylo,yhi,col="lightgrey",...){
   polygon(cbind(c(x, rev(x), x[1]), c(ylo, rev(yhi),
-  ylo[1])), border = NA,...) 
+  ylo[1])), border = NA,col=col,...)
 }
 ```
 
@@ -214,11 +300,57 @@ ciEnvelope <- function(x,ylo,yhi,col="lightgrey",...){
 
 4. Plot histograms of the samples of r and K used for the simulation.
 
+```{r}
+hist(rE)
+abline(v=mean(rE), col="red")
+
+hist(KE)
+abline(v=mean(KE), col="red")
+```
+
 5. Plot a sample of 10 different trajectories from your ensemble (on one graph).
+
+```{r}
+plot(time,n[10,], type='l')
+lines(n[15,], type='l')
+lines(n[45,], type='l')
+lines(n[70,], type='l')
+lines(n[100,], type='l')
+lines(n[250,], type='l')
+lines(n[214,], type='l')
+lines(n[267,], type='l')
+lines(n[333,], type='l')
+lines(n[500,], type='l')
+
+```
 
 6. Plot a histogram of your population forecast at time = 15.
 
+```{r}
+hist(n[,15]) ## ylim=c(0,200), xlim=c(5,15)
+abline(v=mean(n[,15]), col="red")
+
+## note: this histogram plots completely different graphs when the program is run vs when it is knitted, and adding the x and y lims did not fix the problem. The histogram it draws when it is run shows a bell curved set of bars between 5 and 14 with a mean of 10.
+```
+
 7. Plot the median trajectory and 95% CI.
+
+```{r}
+median(n) ## 9.503213 (row 757)
+m = median(n)
+s = sd(n)
+hi = c(NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA)
+lo = c(NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA)
+for (i in 1:30) {
+  hi[i] = m + (1.96 * s/sqrt(1000))
+  lo[i] = m - (1.96 * s/sqrt(1000))
+}
+
+plot(n[757,], type='l')
+ciEnvelope(n[757,],hi,lo,col="lightgrey")
+
+### ...i tried 
+```
 
 8. Add a 50% CI (i.e. 25% to 75%) to the plot. Note that you'll have to both compute the summary statistics for this interval and plot the envelope in a different color.
 
