@@ -264,6 +264,8 @@ We next want to use the Monte Carlo approach to account for parameter uncertaint
 
 To begin, we need to specify the uncertainty in the model parameters and the size of the simulation
 ```{r}
+r = 1
+K = 10
 r.sd = 0.2     ## standard deviation on r
 K.sd = 1.0     ## standard deviation on K
 NE = 1000      ## Ensemble size
@@ -290,14 +292,14 @@ n.stats = apply(n,2,quantile,c(0.025,0.5,0.975))
 
 Unfortunately, R doesn't have a built in function for plotting shaded CI on time-series plots, so we'll define one. Unlike plot, which just takes x and y as arguements, this function needs to take time-series for both the upper (yhi) and lower (ylo) intervals.
 ```{r}
-ciEnvelope <- function(x,ylo,yhi,col="lightgrey",...){
-  polygon(cbind(c(x, rev(x), x[1]), c(ylo, rev(yhi),
-<<<<<<< HEAD
-  ylo[1])), border = NA,col=col,...)
-=======
-  ylo[1])), border = NA,col=col,...) 
->>>>>>> 64dfe21ef290812b31cd5ed51d91476253c60073
-}
+#ciEnvelope <- function(x,ylo,yhi,col="lightgrey",...){
+#  polygon(cbind(c(x, rev(x), x[1]), c(ylo, rev(yhi),
+#<<<<<<< HEAD
+#  ylo[1])), border = NA,col=col,...)
+#=======
+#  ylo[1])), border = NA,col=col,...) 
+#>>>>>>> 64dfe21ef290812b31cd5ed51d91476253c60073
+#}
 ```
 
 ### Problems
@@ -351,7 +353,7 @@ for (i in 1:30) {
 }
 
 plot(n[757,], type='l')
-ciEnvelope(n[757,],hi,lo,col="lightgrey")
+##ciEnvelope(n[757,],hi,lo,col="lightgrey")
 
 ### ...i tried 
 ```

@@ -62,6 +62,13 @@ For more information, please visit http://www.google.org/flutrends
 Using the US Forest Service's Forest Inventory and Analysis (FIA) data set, plot the rank vs log(abundance) curve for tree seedling counts from Rhode Island. Data is available at http://apps.fs.fed.us/fiadb-downloads/RI_SEEDLING.CSV and the relevant columns are TREECOUNT (raw seedling counts) and SPCD (species codes). 
 Hints: tapply, sum, na.rm=TRUE, sort, decreasing=TRUE, log='y'
 
+```{r}
+fia = read.csv("http://apps.fs.fed.us/fiadb-downloads/RI_SEEDLING.CSV")
+abund = tapply(fia$TREECOUNT,fia$SPCD,sum,na.rm=TRUE)
+SPCDsort = sort(abund, decreasing=TRUE)
+plot(SPCDsort, type='l', log='y', xlab="Rank", ylab="Abundance")
+```
+
 
 Web Scraping
 ------------
@@ -81,6 +88,19 @@ fia_table[which(update > "2016/01/01"),]
 
 **Question 2:**
 Create a sorted table of how many FLUXNET eddy-covariance towers are in each country according to the website at http://fluxnet.ornl.gov/site_status. Hint: use substring to extract the country code from the overall FLUXNET ID code.
+
+```{r}
+eddy_html = getURL("http://fluxnet.ornl.gov/site_status")
+eddy_table = readHTMLTable(eddy_html)
+eddy_table
+
+##code = rep(NA, 826)
+##  for (i in 1:826){
+##    code[i] = substr(eddy_table[i,2],1,2)
+##  }
+##codesort = sort(eddy_table$FlUXNET_ID, decreasing = TRUE)
+
+```
 
 grep, system, RegExp
 --------------------
@@ -124,8 +144,8 @@ system('grep -ir "fia" *.Rmd')
 Furthermore, often we want to capture the output of that command directly into R, which we can do using the `intern` flag:
 
 ```{r}
-fia.lines = system('grep -ir "fia" *.Rmd',intern=TRUE)
-fia.lines[1:3]
+##fia.lines = system('grep -ir "fia" *.Rmd',intern=TRUE)
+##fia.lines[1:3]
 ```
 
 Finally, it is also worth mentioning that R has its own, internal, version of grep that can be useful for searching and subsetting data and which also supports RegExp. Unlike the command-line version of grep, this function returns the row numbers matching the search string. In the example below we use the function readLines to read unstructured text in as vector of strings, one corresponding to each row in a file. It also demonstrates the function `sub`, which is related to grep but which substitutes the matching string rather than just finding it.
@@ -141,6 +161,11 @@ gsub("RI","VT",myCode[x])  ## substitute ALL: VT for RI
 
 **Question 3:** Within the object myCode, find all the lines that begin with the comment character, #.
 
+```{r}
+com = grep("^#",myCode)
+myCode[com]
+```
+
 
 netCDF, wget
 ------------
@@ -148,13 +173,13 @@ netCDF, wget
 In this section I want to introduce another command-line utility, wget, which can be used to pull files and content off the web, and to demonstrate how netCDF can be used in R. For this example we will be using data from the WLEF eddy-covariance tower located in northern Wisconsin. Unlike most flux towers, WLEF is a "tall-tower" -- it's actually a 440m TV antenna -- which means that it integrates over a much larger footprint than most towers. Indeed, the tower is instrumented at multiple heights. First, let's use wget to grab the data off the web. A few notes: 1) wget could be used from command line rather than as a system command;  2) if you don't have wget installed, use your web browser
 
 ```{r}
-system("wget http://flux.aos.wisc.edu/data/cheas/wlef/netcdf/US-PFa-WLEF-TallTowerClean-2012-L0-vFeb2013.nc")
+##system("wget http://flux.aos.wisc.edu/data/cheas/wlef/netcdf/US-PFa-WLEF-TallTowerClean-2012-L0-vFeb2013.nc")
 ```
 
 Next, lets open the file and look at what it contains
 ```{r}
 ## open the netCDF file
-wlef = nc_open("US-PFa-WLEF-TallTowerClean-2012-L0-vFeb2013.nc")
+wlef = nc_open("US-PFa-WLEF-TallTowerClean-2012-L0-vFeb2013 (4).nc")
 print(wlef)    ## metadata
 ```
 
@@ -183,11 +208,11 @@ plot(doy,filter(NEE[i,],rep(1/24,24)),type='l',main=paste("Height =",height[i],"
 Alternative, if I just wanted to get a subset of air temperature data (e.g. 24 hours of data from the top height for the 220th day of the year)
 
 ```{r}
-start = which(doy > 220)[1]
-wlef = nc_open("US-PFa-WLEF-TallTowerClean-2012-L0-vFeb2013.nc")
-TA = ncvar_get(wlef,"TA",c(3,start),c(1,24))
-plot(TA,type = 'l')
-nc_close(wlef)
+##start = which(doy > 220)[1]
+##wlef = nc_open("US-PFa-WLEF-TallTowerClean-2012-L0-vFeb2013.nc")
+##TA = ncvar_get(wlef,"TA",c(3,start),c(1,24))
+##plot(TA,type = 'l')
+##nc_close(wlef)
 ```
 
 
@@ -196,11 +221,20 @@ nc_close(wlef)
 
 Similar to how we can point read.csv to the URL of a text file, you can open and manipulate netCDF files on remote servers if those servers support THREDDS/OpenDAP. Furthermore, these utilities let you grab just the part of the file that you need rather than the file in it's entirety. Using this approach, download and plot the air temperature data for Boston for 2004 that's located on the ORNL DAAC server `http://thredds.daac.ornl.gov/thredds/dodsC/ornldaac/1220/mstmip_driver_global_hd_climate_tair_2004_v1.nc4`.  The underlying file is quite large so make sure to grab just the subset you need. To do so you'll need to first grab the lat, lon, and time variables to find _which_ grid cell to grab for lat and lon and how many values to grab from time (i.e. _length_). 
 
+```
+Error {
+    code = 400;
+    message = "Unrecognized request";
+};
+
+## Got this error when retrieving file. Running on Windows.
+```
+
 
 SOAP
 ----
 
-In addition to data that is directly downloadable, and that which is scraped, there are a number of places on the web where data is available though interactive webservices. One standard protocol for such data sharing is the Simple Object Acces Protocol (SOAP). In this example we will be using SOAP to access the NASA MODIS server, and rather than using the generic SOAP library we'll use a pre-existing R package called MODISTools, as a demonstration of one of the many dataset-specific R packages.  
+In addition to data that is directly downloadable, and that which is scraped, there are a number of places on the web where data is available though interactive webservices. One standard protocol for such data sharing is the Simple Object Access Protocol (SOAP). In this example we will be using SOAP to access the NASA MODIS server, and rather than using the generic SOAP library we'll use a pre-existing R package called MODISTools, as a demonstration of one of the many dataset-specific R packages.  
 
 While it is possible to grab MODISTools off of CRAN directly, it is also simple to pull R packages out of code development repositories, such as Github using the devtools library. This is useful because not all R Packages are on CRAN, and even when they are there are sometimes features in the development branch of a tool that are not in the released version. In this example the second argument is the GitHub project or user that's hosting the code.
 ```
@@ -237,6 +271,13 @@ time = as.Date(substr(MODIS[,10],1,7),format="%Y%j")
 
 **Question 5:** Plot EVI versus time and compare to the CO2 flux observations.
 
+```{r}
+plot(time, EVI, type='l')
+```
+```
+EVI is highest in the summer months, which is when CO2 fluxes would be most active and when atmospheric CO2 is lowest. 
+```
+
 cron
 ----
 
@@ -269,6 +310,15 @@ Values that are not specified explicitly are filled in with a *. Also, it is pos
 Imagine you are working with the full FIA database and want to ensure that the data you are using is always up to date. However, the total size of the database is large, the USFS server is slow, and you don't want to completely delete and reinstall the database every day when only a small percentage of the data changes in any update. 
 
 * Write out the pseudocode/outline for how to keep the files up to date
+
+```
+Update databases on a weekly basis 
+```
 * Write out what the cron table would look like to schedule this job (assume the update only needs to be done weekly)
+
+```
+(UPDATE=)                    ## command
+* * * * 1 (FIA file location)   ## schedule:every monday
+```
 
 
