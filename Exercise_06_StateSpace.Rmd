@@ -116,10 +116,71 @@ Assignment:
 
 To look at how observation frequency affects data assimilation, convert 3 out of every 4 observations to NA (i.e. treat the data as approximately monthly) and refit the model. 
 
+```{r}
+a = seq(1, 620, by=2)
+b = seq(2, 620, by=4)
+
+y2 = y
+y2[a] = NA
+y2[b] = NA
+
+RandomWalk2 = "
+model{
+  
+  #### Data Model
+  for(i in 1:n){
+    y2[i] ~ dnorm(x[i],tau_obs)
+  }
+  
+  #### Process Model
+  for(i in 2:n){
+    x[i]~dnorm(x[i-1],tau_add)
+  }
+  
+  #### Priors
+  x[1] ~ dnorm(x_ic,tau_ic)
+  tau_obs ~ dgamma(a_obs,r_obs)
+  tau_add ~ dgamma(a_add,r_add)
+}
+"
+
+data2 <- list(y2=log(y2),n=length(y2),x_ic=log(1000),tau_ic=100,a_obs=1,r_obs=1,a_add=1,r_add=1)
+
+j2.model   <- jags.model (file = textConnection(RandomWalk2),
+                             data = data2,
+                             inits = init,
+                             n.chains = 3)
+
+jags2.out   <- coda.samples (model = j2.model,
+                            variable.names = c("x","tau_add","tau_obs"),
+                                n.iter = 10000)
+
+out2 <- as.matrix(jags2.out)
+ci2 <- apply(exp(out2[,3:ncol(out2)]),2,quantile,c(0.025,0.5,0.975))
+```
+
 * Generate a time-series plot for the CI of x that includes the observations (as above). Use a different color and symbol to differentiate observations that were included in the model versus those that were converted to NA's.
+
+```{r}
+plot(time,y2, type="l")
+ciEnvelope(time,ci2[1,],ci2[3,],col="green")
+points(time,y2,pch="*",cex=0.5)
+```
 * Compare the CI between the two runs.
+
+```
+The CI for the original data set is much tighter than the CI of the data set filled with NAs because there is less uncertainty when there is more data.
+```
 * Generate a predicted (median) vs observed plot for the data points that were removed
+
+```{r}
+##plot(y,out2[x])
+```
 * Comment on the accuracy and precision of the estimates.
+
+```
+
+```
 
 Extra Credit:
 -------------
@@ -127,4 +188,55 @@ Extra Credit:
 Return to the original data and instead of removing 3/4 of the data remove the last 40 observations (convert to NA) and refit the model to make a forecast for this period
 
 * Generate a time-series plot for the CI of x that includes the observations (as above but zoom the plot on the last ~80 observations). Use a different color and symbol to differentiate observations that were included in the model versus those that were converted to NA's.
+
+```{r}
+c = seq(580, 620, by=1)
+
+y3 = y
+y3[c] = NA
+
+
+RandomWalk3 = "
+model{
+  
+  #### Data Model
+  for(i in 1:n){
+    y3[i] ~ dnorm(x[i],tau_obs)
+  }
+  
+  #### Process Model
+  for(i in 2:n){
+    x[i]~dnorm(x[i-1],tau_add)
+  }
+  
+  #### Priors
+  x[1] ~ dnorm(x_ic,tau_ic)
+  tau_obs ~ dgamma(a_obs,r_obs)
+  tau_add ~ dgamma(a_add,r_add)
+}
+"
+
+data3 <- list(y3=log(y3),n=length(y3),x_ic=log(1000),tau_ic=100,a_obs=1,r_obs=1,a_add=1,r_add=1)
+
+j3.model   <- jags.model (file = textConnection(RandomWalk3),
+                             data = data3,
+                             inits = init,
+                             n.chains = 3)
+
+jags3.out   <- coda.samples (model = j3.model,
+                            variable.names = c("x","tau_add","tau_obs"),
+                                n.iter = 10000)
+
+out3 <- as.matrix(jags3.out)
+ci3 <- apply(exp(out3[,3:ncol(out3)]),2,quantile,c(0.025,0.5,0.975))
+
+
+plot(time,y3, type="l")
+ciEnvelope(time,ci3[1,],ci3[3,],col="red")
+points(time,y3,pch="^",cex=0.5)
+```
 * Comment on how well the random walk model performed (both accuracy and precision) and how it might be modified to improve both these criteria.
+
+```
+
+```
