@@ -174,12 +174,14 @@ The CI for the original data set is much tighter than the CI of the data set fil
 * Generate a predicted (median) vs observed plot for the data points that were removed
 
 ```{r}
-##plot(y,out2[x])
+ci2.5 = apply(exp(out2[,3:ncol(out2)]),2,quantile,c(0.5))
+plot(y,ci2.5)
+lines(y,y2, type='l')
 ```
 * Comment on the accuracy and precision of the estimates.
 
 ```
-
+The plot roughly follows a 1:1 line, which indicates a reasonable level of accuracy. The points become less precise at higher iterations.
 ```
 
 Extra Credit:
@@ -190,6 +192,7 @@ Return to the original data and instead of removing 3/4 of the data remove the l
 * Generate a time-series plot for the CI of x that includes the observations (as above but zoom the plot on the last ~80 observations). Use a different color and symbol to differentiate observations that were included in the model versus those that were converted to NA's.
 
 ```{r}
+### last 40
 c = seq(580, 620, by=1)
 
 y3 = y
@@ -234,9 +237,63 @@ ci3 <- apply(exp(out3[,3:ncol(out3)]),2,quantile,c(0.025,0.5,0.975))
 plot(time,y3, type="l")
 ciEnvelope(time,ci3[1,],ci3[3,],col="red")
 points(time,y3,pch="^",cex=0.5)
+
+
+### last 80
+c = seq(540, 620, by=1)
+
+y4 = y
+y4[c] = NA
+
+
+RandomWalk4 = "
+model{
+  
+  #### Data Model
+  for(i in 1:n){
+    y4[i] ~ dnorm(x[i],tau_obs)
+  }
+  
+  #### Process Model
+  for(i in 2:n){
+    x[i]~dnorm(x[i-1],tau_add)
+  }
+  
+  #### Priors
+  x[1] ~ dnorm(x_ic,tau_ic)
+  tau_obs ~ dgamma(a_obs,r_obs)
+  tau_add ~ dgamma(a_add,r_add)
+}
+"
+
+data4 <- list(y4=log(y4),n=length(y4),x_ic=log(1000),tau_ic=100,a_obs=1,r_obs=1,a_add=1,r_add=1)
+
+j4.model   <- jags.model (file = textConnection(RandomWalk4),
+                             data = data4,
+                             inits = init,
+                             n.chains = 3)
+
+jags4.out   <- coda.samples (model = j4.model,
+                            variable.names = c("x","tau_add","tau_obs"),
+                                n.iter = 10000)
+
+out4 <- as.matrix(jags4.out)
+ci4 <- apply(exp(out3[,3:ncol(out3)]),2,quantile,c(0.025,0.5,0.975))
+
+
+plot(time,y4, type="l")
+ciEnvelope(time,ci4[1,],ci4[3,],col="purple")
+points(time,y4,pch="^",cex=0.5)
 ```
 * Comment on how well the random walk model performed (both accuracy and precision) and how it might be modified to improve both these criteria.
 
-```
+```{r}
+ci3.5 = apply(exp(out3[,3:ncol(out3)]),2,quantile,c(0.5))
+plot(y,ci3.5)
 
+ci4.5 = apply(exp(out4[,3:ncol(out3)]),2,quantile,c(0.5))
+plot(y,ci4.5)
+```
+```
+These two plots are much more precise and accurate except for the small patches of data around the bottom that don't ft the line at all and reduce the overall accuracy/precision.
 ```
